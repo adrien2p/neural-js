@@ -12,9 +12,9 @@ export default class Neuron {
             outputNeuronIds: []
         };
         this.weight = Math.random();
-        this.bias = 1;
+        this.bias = Math.random() * .2 - .1;
+        this.outputValue = null;
         this.activationFunction = options.activationFunction;
-        this.lastComputedOutput = null;
     }
 
     /**
@@ -38,11 +38,11 @@ export default class Neuron {
      * @param {Array} inputs All inputs value
      * @returns {number}
      */
-    process(input) {
-        const result = input * this.weight;
+    process(input = null) {
+        const result = input * this.weight + this.bias;
         const normalizedResult = this.normalize(result);
-        this.lastComputedOutput = normalizedResult;
-        return this.lastComputedOutput;
+        this.outputValue = normalizedResult;
+        return this.outputValue;
     }
 
     normalize(value) {
@@ -56,14 +56,15 @@ export default class Neuron {
 
     /**
      * Return the layer as a json object.
-     * @returns {{id: *, metadata: ({}|*), weight: *, bias: *, inputNeuronIds: Array, outputNeuronIds: *}}
+     * @returns {{id: *, metadata: *, weight: *, bias: number, outputValue: (null|*)}}
      */
     toJSON() {
         return {
             id: this.id,
             metadata: this.metadata,
             weight: this.weight,
-            bias: this.bias
+            bias: this.bias,
+            outputValue: this.outputValue
         };
     }
 }

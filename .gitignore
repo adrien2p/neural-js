@@ -1,0 +1,18 @@
+# Created by .ignore support plugin (hsz.mobi)
+#Dependencies directory
+node_modules
+
+#logs
+npm-debug.log
+
+#webstorm idea
+.idea
+
+#coverage
+coverage
+
+#results
+results
+
+#build
+dist

@@ -1,0 +1,33 @@
+{
+  "name": "neural-js",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "adrien de peretti <adrien.deperetti.freelance@gmail.com>",
+  "description": "Easy javascript library for neural network",
+  "main": "dist/neural.js",
+  "scripts": {
+    "test": "mocha --compilers js:babel-core/register --require babel-polyfill --colors ./test/**/*.spec.js",
+    "test:watch": "mocha --colors -w ./test/**/*.spec.js",
+    "build:prod": "rollup -c",
+    "build:dev": "rollup -c -w",
+    "lint": "eslint src/** --fix"
+  },
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "babel-core": "^6.24.1",
+    "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-es2015": "^6.24.1",
+    "chai": "^3.5.0",
+    "help": "^3.0.2",
+    "mocha": "^3.2.0",
+    "rollup": "^0.41.6",
+    "rollup-plugin-commonjs": "^8.0.2",
+    "rollup-plugin-eslint": "^3.0.0",
+    "rollup-plugin-node-resolve": "^3.0.0",
+    "rollup-watch": "^3.2.2"
+  },
+  "dependencies": {
+    "uuid": "^3.0.1"
+  }
+}

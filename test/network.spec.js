@@ -10,7 +10,7 @@ describe('Network', () => {
         const network = new Network();
         const neuron = new Neuron();
 
-        console.log(neuron.process(10));
+        console.log(neuron.process(1));
 
         const stream = fs.createWriteStream(`./results/newtork-${new Date().toISOString().slice(0, 10)}_${network.id}.json`);
         const networkBuffer = Buffer(JSON.stringify(network.toJSON(), null, 4));

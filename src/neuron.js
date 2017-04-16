@@ -7,13 +7,14 @@ import uuid from 'uuid';
 export default class Neuron {
     constructor(options = { activationFunction: 'sigmoid' }) {
         this.id = uuid.v4();
-        this.metadata = {};
+        this.metadata = {
+            inputNeuronIds: [],
+            outputNeuronIds: []
+        };
         this.weight = Math.random();
         this.bias = 1;
-        this.inputNeuronIds = [];
-        this.outputNeuronIds = [];
         this.activationFunction = options.activationFunction;
-        this.lastProcessResult = null;
+        this.lastComputedOutput = null;
     }
 
     /**
@@ -21,7 +22,7 @@ export default class Neuron {
      * @param {number} id The id of the neuron
      */
     addInputNeuronId(id) {
-        this.inputNeuronIds.push(id);
+        this.metadata.inputNeuronIds.push(id);
     }
 
     /**
@@ -29,7 +30,7 @@ export default class Neuron {
      * @param {number} id The id of the neuron
      */
     addOutputNeuronId(id) {
-        this.outputNeuronIds.push(id);
+        this.metadata.outputNeuronIds.push(id);
     }
 
     /**
@@ -40,8 +41,8 @@ export default class Neuron {
     process(input) {
         const result = input * this.weight;
         const normalizedResult = this.normalize(result);
-        this.lastProcessResult = normalizedResult;
-        return this.lastProcessResult;
+        this.lastComputedOutput = normalizedResult;
+        return this.lastComputedOutput;
     }
 
     normalize(value) {
@@ -62,9 +63,7 @@ export default class Neuron {
             id: this.id,
             metadata: this.metadata,
             weight: this.weight,
-            bias: this.bias,
-            inputNeuronIds: this.inputNeuronIds,
-            outputNeuronIds: this.outputNeuronIds
+            bias: this.bias
         };
     }
 }

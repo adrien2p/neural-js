@@ -67,8 +67,8 @@ export default class Layer {
     connectInputOutputNeurons(nextLayer) {
         for (const neuron of this.neurons) {
             for (const nextLayerNeuron of nextLayer.neurons) {
-                neuron.addOutputNeuronId(nextLayerNeuron.id);
-                nextLayerNeuron.addInputNeuronId(neuron.id);
+                !neuron.metadata.inputNeuronIds.includes(nextLayer.id) && neuron.addOutputNeuronId(nextLayerNeuron.id);
+                !nextLayerNeuron.metadata.outputNeuronIds.includes(neuron.id) && nextLayerNeuron.addInputNeuronId(neuron.id);
             }
         }
     }

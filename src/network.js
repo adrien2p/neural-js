@@ -74,14 +74,14 @@ export default class Network {
 
         const layersCopy = Array.from(this.layers);
         const inputLayer = layersCopy.reverse().pop();
-        const outputLayer = layersCopy.reverse().pop();
-        const hiddenLayers = [].concat(...layersCopy);
+        //const outputLayer = layersCopy.reverse().pop();
+        //const hiddenLayers = [].concat(...layersCopy);
 
         let iteration = 0;
         let error = 1;
 
         while (iteration <= options.iterations || error > options.error) {
-            iteration++
+            iteration++;
             for (const data of set) {
                 let input = data.input;
                 inputLayer.resolve(input);

@@ -1,19 +1,18 @@
-import * as uuid from 'uuid';
+import uuid from 'uuid';
 
 /**
  * @class Neuron
  * @description Neuron object than contains weight, bias, ... information to compute the prediction.
  */
 export default class Neuron {
-    constructor(options = {}) {
+    constructor(options = { activationFunction: 'sigmoid' }) {
         this.id = uuid.v4();
         this.metadata = {};
         this.weight = Math.random();
         this.bias = 1;
         this.inputNeuronIds = [];
         this.outputNeuronIds = [];
-        this.activationFunction = options.activationFunction || 'sigmoid';
-        this.processCount = 0;
+        this.activationFunction = options.activationFunction;
         this.lastProcessResult = null;
     }
 
@@ -33,25 +32,16 @@ export default class Neuron {
         this.outputNeuronIds.push(id);
     }
 
-    process(inputs) {
-        this.processCount++;
-
-        let output = 0;
-        for (const input of inputs) {
-            output += input * this.weight;
-        }
-        output += this.bias * this.weight;
-
-        this.lastProcessResult = this.normalize(output);
+    /**
+     * Compute de output value.
+     * @param {Array} inputs All inputs value
+     * @returns {number}
+     */
+    process(input) {
+        const result = input * this.weight;
+        const normalizedResult = this.normalize(result);
+        this.lastProcessResult = normalizedResult;
         return this.lastProcessResult;
-    }
-
-    train(set, options) {
-        let result = null;
-        for (const data of set) {
-            result = this.process(data.input);
-        }
-        return result;
     }
 
     normalize(value) {
@@ -74,10 +64,7 @@ export default class Neuron {
             weight: this.weight,
             bias: this.bias,
             inputNeuronIds: this.inputNeuronIds,
-            outputNeuronIds: this.outputNeuronIds,
-            activationFunction: this.activationFunction,
-            processCount: this.processCount,
-            lastProcessResult: this.lastProcessResult
-        }
+            outputNeuronIds: this.outputNeuronIds
+        };
     }
 }

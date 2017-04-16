@@ -1,4 +1,4 @@
-import * as uuid from 'uuid';
+import uuid from 'uuid';
 
 import Neuron from './neuron';
 
@@ -21,15 +21,15 @@ export default class Layer {
      * @param {boolean} [options.autoPopulateNeurons = true]  If it's true, generate 10 neurons according to the next parameter
      * @param {number} [options.size = 10] The maximum number of neurons in the layer
      * @param {Array} [options.neurons = null] All the neurons to add in the layer
-     * @param {string} [options.activationFunction = 'sigmoid'] The neuron activation function
+     * @param {string} [options.activationFunction = 'sigmoid'] The layer activation function
      * @private
      */
     _init(options) {
         options = Object.assign({
+            activationFunction: 'sigmoid',
             autoPopulateNeurons: true,
             size: 10,
-            neurons: null,
-            activationFunction: 'sigmoid'
+            neurons: null
         }, options);
 
         this._validateOrThrow(options);
@@ -50,14 +50,14 @@ export default class Layer {
      * @param {boolean} options.autoPopulateNeurons If it's true, generate 10 neurons according to the next parameter
      * @param {number} options.size The maximum number of neurons in the layer
      * @param {Array} options.neurons All the neurons to add in the layer
-     * @param {string} options.activationFunction The neuron activation function
+     * @param {string} options.activationFunction The layer activation function
      * @private
      */
     _validateOrThrow(options) {
         if (typeof options.autoPopulateNeurons !== 'boolean') throw new Error('autoPopulateNeurons must be a boolean.');
         if (typeof options.size !== 'number') throw new Error('size must be a number.');
+        if (typeof options.activationFunction !== 'string') throw new Error('activationFunction must be a string.');
         if (!options.autoPopulateNeurons && !Array.isArray(options.neurons)) throw new Error('neurons must be an array.');
-        if (typeof options.activationFunction !== 'string') throw new Error('activationFunction must be a string.')
     }
 
     /**
@@ -73,10 +73,8 @@ export default class Layer {
         }
     }
 
-    trainNeurons(set, options) {
-        for (const neuron of this.neurons) {
-            neuron.train(set, options);
-        }
+    resolve(input) {
+        return this.neurons.map((neuron, i) => neuron.process(input[i]));
     }
 
     /**
@@ -88,6 +86,6 @@ export default class Layer {
             id: this.id,
             metadata: this.metadata,
             neurons: this.neurons.map(n => n.toJSON())
-        }
+        };
     }
 }

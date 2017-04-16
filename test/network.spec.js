@@ -9,7 +9,7 @@ describe('Network', () => {
         const network = new Network();
         const neuron = new Neuron();
 
-        console.log(neuron.process([1]));
+        console.log(neuron.process(10));
 
 
 

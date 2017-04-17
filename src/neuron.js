@@ -56,14 +56,17 @@ export default class Neuron {
 
     /**
      * Compute the output result.
-     * @param {number} input Value used to compute the output result
-     * @returns {number}
+     * @param {Array} value Value used to compute the output result
+     * @returns {Neuron}
      */
-    compute(input = 0) {
-        const result = input * this.weight + this.bias;
-        const normalizedResult = this.normalize(result);
-        this.outputValue = normalizedResult;
-        return this.outputValue;
+    compute(values) {
+        let sum = 0;
+        for (const value of values) {
+            sum += this.config.weight * value;
+        }
+        sum += this.config.bias * this.config.weight;
+        this.outputValue = this.normalize(sum);
+        return this;
     }
 
     /**

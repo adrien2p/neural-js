@@ -12,37 +12,19 @@ describe('Network', () => {
         /* Create network from scratch */
         const network = new Network({
             activationFunction: utils.activationFunction.SIGMOID,
-            layers: [
-                new Layer({
-                    neurons: [
-                        new Neuron(),
-                        new Neuron(),
-                        new Neuron()
-                    ]
-                }),
-                new Layer({
-                    neurons: [
-                        new Neuron()
-                    ]
-                }),
-                new Layer({
-                    neurons: [
-                        new Neuron()
-                    ]
-                }),
-                new Layer({
-                    neurons: [
-                        new Neuron(),
-                        new Neuron(),
-                        new Neuron()
-                    ]
-                })
-            ]
+            layersSize: [10, 1, 1],
+            training: {
+                learningRate: 0.1,
+                error: 0.005,
+                epoch: 10,
+                log: false,
+                logEveryTimes: 0
+            }
         });
 
         network.train([{
-            input: [1, 1],
-            output: 0
+            input: [0, 0],
+            output: [0]
         }]);
 
         const stream = fs.createWriteStream(`./results/newtork-${new Date().toISOString().slice(0, 19)}_${network.id}.json`);

@@ -10,11 +10,10 @@ import Neuron from './neuron';
 export default class Layer {
     constructor(options = {}) {
         this.id = null;
+        this.index = 0;
         this.config = {
             activationFunction: '',
-            neuronsCount: 0,
-            learningRate: 0,
-            error: 0
+            neuronsCount: 0
         };
         this.neurons = [];
 
@@ -24,27 +23,23 @@ export default class Layer {
     /**
      * Initialize the layer with options value given, if not, use the default value configured.
      * @param {object} options Options to initialize the layer
+     * @param {number} options.index The index of the layer
      * @param {string} [options.activationFunction = 'SIGMOID'] The name of the activation function used to normalize result in each neuron
      * @param {number} [options.neuronsCount = 10] The number of neuron pushed in the layer
-     * @param {number} [options.learningRate = 0.1] The value used to compute the output value in each neuron
-     * @param {number} [options.error = 0.005] The maximum error value to reach
      * @private
      */
     _initialize(options) {
         options = Object.assign({
             activationFunction: utils.activationFunction.SIGMOID,
-            neuronsCount: 10,
-            learningRate: 0.1,
-            error: 0.005
+            neuronsCount: 10
         }, options);
 
         this._validateOrThrow(options);
 
         this.id = uuid.v4();
+        this.index = options.index;
         this.config.activationFunction = options.activationFunction;
         this.config.neuronsCount = options.neuronsCount;
-        this.config.learningRate = options.learningRate;
-        this.config.error = options.error;
 
         this.neurons.push(...Array.from({ length: options.neuronsCount }).map(() => new Neuron({
             activationFunction: options.activationFunction
@@ -54,19 +49,17 @@ export default class Layer {
     /**
      * Valid layer options before it's used to initialize the layer config. Throw the options value isn't expected.
      * @param {object} options Options to initialize the layer
-     * @param {string} ptions.activationFunction The name of the activation function used to normalize result in the neuron
+     * @param {number} options.index The index of the layer
+     * @param {string} options.activationFunction The name of the activation function used to normalize result in the neuron
      * @param {number} options.neuronsCount The name of the activation function used to normalize result in a neuron
-     * @param {number} options.learningRate The value used to compute the output value in a neuron
-     * @param {number} options.error The maximum error value to reach
      * @private
      */
     _validateOrThrow(options) {
         if (!Object.keys(utils.activationFunction).includes(options.activationFunction)) {
             throw new Error('The activationFunction must be in the utils.activationFunction.');
         }
+        if (typeof options.index !== 'number') throw new Error('The index must be a number.');
         if (typeof options.neuronsCount !== 'number') throw new Error('The neuronsCount must be a number.');
-        if (typeof options.learningRate !== 'number') throw new Error('The learningRate must be a number.');
-        if (typeof options.error !== 'number') throw new Error('The error must be a number.');
     }
 
     /**
@@ -84,12 +77,20 @@ export default class Layer {
     }
 
     /**
-     * Active all neuron to compute their output value.
-     * @param {Array} inputs Array of number value
+     * Compute output value for each neuron of the layer.
+     * @param {Array} values Array of number or neurons
      * @returns {Array}
      */
-    compute(inputs) {
-        return this.neurons.map((neuron, i) => neuron.compute(inputs[i]));
+    compute(values) {
+        if (this.index === 0) {
+            /* Input are number in the case of input layer computation */
+            return this.neurons.map(neuron => neuron.compute(values));
+        } else {
+            /* Input are neuron in the case of other layer */
+            return this.neurons.map(neuron => neuron.compute(values.map(inputNeuron => {
+                return neuron.inputNeuronIds.includes(inputNeuron.id) && inputNeuron.outputValue;
+            })));
+        }
     }
 
     /**
@@ -99,6 +100,7 @@ export default class Layer {
     toJSON() {
         return {
             id: this.id,
+            index: this.index,
             config: this.config,
             neurons: this.neurons.map(n => n.toJSON())
         };

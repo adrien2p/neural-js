@@ -14,11 +14,9 @@ describe('Network', () => {
             activationFunction: utils.activationFunction.SIGMOID,
             layersSize: [10, 1, 1],
             training: {
-                learningRate: 0.1,
-                error: 0.005,
                 epoch: 10,
-                log: false,
-                logEveryTimes: 0
+                logging: true,
+                logEveryTimes: 10
             }
         });
 

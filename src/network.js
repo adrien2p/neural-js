@@ -19,8 +19,7 @@ export default class Network {
                 learningRate: 0,
                 error: 0,
                 epoch: 0,
-                log: false,
-                logEveryTimes: 0
+                log: 0
             }
         };
         this.layers = [];
@@ -36,8 +35,7 @@ export default class Network {
      * @param {number} [options.training.learningRate = 0.1] The value used to compute the output value in each neuron
      * @param {number} [options.training.error = 0.005] The maximum error value to reach
      * @param {number} [options.training.epoch = 1000] The number of iteration training
-     * @param {number} [options.training.log = false] Show logs
-     * @param {number} [options.training.logEveryTimes = 10] Show logs every * iterations
+     * @param {number} [options.training.log = false] Show logs every X iterations
      * @private
      */
     _initialize(options) {
@@ -45,14 +43,15 @@ export default class Network {
             name: 'N/A',
             activationFunction: utils.activationFunction.SIGMOID,
             layersSize: [100, 10, 1],
-            training: Object.assign({
-                learningRate: 0.1,
-                error: 0.005,
-                epoch: 1000,
-                log: false,
-                logEveryTimes: 10
-            }, options.training)
+            training: {}
         }, options);
+
+        options.training = Object.assign({
+            learningRate: 0.1,
+            error: 0.005,
+            epoch: 1000,
+            log: 10
+        }, options.training);
 
         this._validateOrThrow(options);
 
@@ -65,7 +64,6 @@ export default class Network {
         this.config.training.error = options.training.error;
         this.config.training.epoch = options.training.epoch;
         this.config.training.log = options.training.log;
-        this.config.training.logEveryTimes = options.training.logEveryTimes;
 
         this.config.layersSize.map((size, i) => {
            this.layers.push(new Layer({
@@ -85,8 +83,7 @@ export default class Network {
      * @param {number} options.training.learningRate The value used to compute the output value in each neuron
      * @param {number} options.training.error The maximum error value to reach
      * @param {number} options.training.epoch The number of iteration training
-     * @param {number} options.training.log Show logs
-     * @param {number} options.training.logEveryTimes Show logs every * iterations
+     * @param {number} options.training.log Show logs every X iterations
      * @private
      */
     _validateOrThrow(options) {
@@ -96,15 +93,13 @@ export default class Network {
         }
         if (!Array.isArray(options.layersSize)) throw new Error('The layersSize must be an array of number.');
         if (options.layersSize.length < 2) throw new Error('The layersSize must have 2 or more values as input and output.');
-        if (typeof options.training.learningRate !== 'number') throw new Error('The train.learningRate must be a number.');
-        if (typeof options.training.error !== 'number') throw new Error('The train.error must be a number.');
-        if (typeof options.training.epoch !== 'number') throw new Error('The train.epoch must be a number.');
-        if (typeof options.training.log !== 'boolean') throw new Error('The train.log must be a boolean.');
-        if (typeof options.training.logEveryTimes !== 'number') throw new Error('The train.logEveryTimes must be a number.');
+        if (typeof options.training.learningRate !== 'number') throw new Error('The training.learningRate must be a number.');
+        if (typeof options.training.error !== 'number') throw new Error('The training.error must be a number.');
+        if (typeof options.training.epoch !== 'number') throw new Error('The training.epoch must be a number.');
+        if (typeof options.training.log !== 'number') throw new Error('The training.log must be a number.');
     }
 
     /**
-     *
      * @param {Array} set
      */
     train(set) {
@@ -122,8 +117,10 @@ export default class Network {
                     previous += neuron.outputValue;
                     return previous;
                 }, 0);
+            }
 
-                console.log(result > 0 ? 1 : 0);
+            if (this.config.training.log > 0 && epochCount % this.config.training.log === 0) {
+                console.log(`${epochCount} already done`);
             }
         }
 

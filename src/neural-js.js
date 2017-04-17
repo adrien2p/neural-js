@@ -1,5 +1,4 @@
-import Neuron from './neuron';
-import Layer from './layer';
+import utils from './utils';
 import Network from './network';
 
-export default { Network, Layer, Neuron };
+export default { Network, utils };

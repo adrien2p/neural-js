@@ -8,92 +8,85 @@ import utils from './utils';
  */
 export default class Neuron {
     constructor(options = {}) {
-        this.id = null;
-        this.config = {
-            activationFunction: '',
-            weight: null,
-            bias: null
-        };
-        this.inputNeuronIds = [];
-        this.outputNeuronIds = [];
-        this.outputValue = null;
-
-        this._initialize(options);
-    }
-
-    /**
-     * Initialize the neuron with options value given, if not, use the default value configured.
-     * @param {object} options Options to initialize the neuron
-     * @param {string} [options.activationFunction = 'SIGMOID'] The name of the activation function used to normalize result
-     * @private
-     */
-    _initialize(options) {
         options = Object.assign({
-            activationFunction: utils.activationFunction.SIGMOID
+            activationFunction: utils.activationFunction.SIGMOID,
+            learningRate: 0.1
         }, options);
 
         this.id = uuid.v4();
-        this.config.activationFunction = options.activationFunction;
-        this.config.weight = Math.random();
-        this.config.bias = Math.random() * .2 - .1;
+        this.oldState = 0;
+        this.state = 0; // value before normalize
+        this.activation = 0; // value after normalize
+        this.derivative = 0; // derivative of this.activation
+        this.bias = Math.random() * 0.2 - 0.1;
+        this.connections = { input: {}, output: {} };
+        this.config = {
+            activationFunction: options.activationFunction,
+            learningRate: options.learningRate
+        };
     }
 
-    /**
-     * Add new id of the input neuron link to the actual neuron.
-     * @param {string} id The id of the input neuron link to the actual neuron
-     */
-    addInputNeuronId(id) {
-        this.inputNeuronIds.push(id);
+    connect(connection, target = 'input') {
+        if (this.connections[target][connection.id]) return;
+        const id = target === 'input' ? connection.from.id : connection.to.id;
+        this.connections[target][id] = connection;
     }
 
-    /**
-     * Add new id of the output neuron link to the actual neuron.
-     * @param {string} id The id of the output neuron link to the actual neuron
-     */
-    addOutputNeuronId(id) {
-        this.outputNeuronIds.push(id);
-    }
-
-    /**
-     * Compute the output result.
-     * @param {Array} value Value used to compute the output result
-     * @returns {Neuron}
-     */
-    compute(values) {
-        let sum = 0;
-        for (const value of values) {
-            sum += this.config.weight * value;
+    activate(input = undefined) {
+        if (typeof input !== 'undefined') {
+            this.activation = input;
+            this.derivative = 0;
+            this.bias = 0;
+            return this.activation;
         }
-        sum += this.config.bias * this.config.weight;
-        this.outputValue = this.normalize(sum);
-        return this;
+
+        this.oldState = this.state;
+
+        this.state = this.weight * this.state + this.bias;
+
+        for (const key of Object.keys(this.connections)) {
+            this.state += this.connections[key].weight * this.connections[key].activation;
+        }
+
+        this.activation = this.normalize(this.state);
+        this.derivative = this.normalize(this.state, true);
+
+        return this.activation;
     }
 
-    /**
-     * Normalize the result and return a value between [0 - 1].
-     * @param value The value to normalize
-     * @returns {number}
-     */
-    normalize(value) {
+    normalize(value, derivative = false) {
         switch (this.config.activationFunction) {
             case 'SIGMOID':
-                return (1 - (Math.pow(Math.E, -value)));
+                const f = (1 / (1 + Math.pow(Math.E, -value)));
+                if (!derivative) return f;
+                if (derivative) return f / (1 - f);
+                break;
+            case 'TANH':
+                return (2 / (1 + Math.pow(Math.E, -(2 * value))));
             default:
                 throw new Error(`The activationFunction ${this.config.activationFunction} isn't implemented yet.`);
         }
     }
 
+
     /**
      * Export the object to json format.
-     * @returns {{id: *, config: ({activationFunction: string, weight: null, bias: null}|*), inputNeuronIds: Array, outputNeuronIds: Array, outputValue: (null|number|*)}}
+     * @param {boolean} stopPropagation Stop toJSON function to avoid circular references
+     * @returns {{id: *, oldState: (number|*), state: (number|*), activation: (*|number), derivative: (number|*), bias: number, connections: {input: (boolean|Array|string), output: (boolean|Array|string)}, config: ({activationFunction: (string|*|string), learningRate: number}|*)}}
      */
-    toJSON() {
+    toJSON(stopPropagation) {
         return {
             id: this.id,
-            config: this.config,
-            inputNeuronIds: this.inputNeuronIds,
-            outputNeuronIds: this.outputNeuronIds,
-            outputValue: this.outputValue
+            oldState: this.oldState,
+            state: this.state,
+            activation: this.activation,
+            derivative: this.derivative,
+            bias: this.bias,
+            connections: {
+                input: !stopPropagation && Object.keys(this.connections.input).map(key => this.connections.input[key].toJSON()) || 'stop propagation',
+                output: !stopPropagation && Object.keys(this.connections.output).map(key => this.connections.output[key].toJSON()) || 'stop propagation'
+            },
+            config: this.config
         };
     }
 }

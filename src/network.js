@@ -9,122 +9,91 @@ import Layer from './layer';
  */
 export default class Network {
     constructor(options = {}) {
-        this.id = null;
-        this.name = '';
-        this.config = {
-            activationFunction: '',
-            layersSize: [],
-            layersCount: 0,
-            training: {
-                learningRate: 0,
-                error: 0,
-                epoch: 0,
-                log: 0
-            }
-        };
-        this.layers = [];
-
-        this._initialize(options);
-    }
-
-    /**
-     * Initialize the network with options value given, if not, use the default value configured.
-     * @param {object} options Options to initialize the network
-     * @param {string} [options.activationFunction = 'SIGMOID'] The name of the activation function used to normalize result in each neuron
-     * @param {number} [options.layersSize = [100, 10, 1]] The size of each layer
-     * @param {number} [options.training.learningRate = 0.1] The value used to compute the output value in each neuron
-     * @param {number} [options.training.error = 0.005] The maximum error value to reach
-     * @param {number} [options.training.epoch = 1000] The number of iteration training
-     * @param {number} [options.training.log = false] Show logs every X iterations
-     * @private
-     */
-    _initialize(options) {
         options = Object.assign({
             name: 'N/A',
             activationFunction: utils.activationFunction.SIGMOID,
             layersSize: [100, 10, 1],
-            training: {}
+            training: {},
+            debug: false
         }, options);
 
         options.training = Object.assign({
             learningRate: 0.1,
-            error: 0.005,
-            epoch: 1000,
-            log: 10
+            errorThreshold: 0.005,
+            iterations: 1000,
+            rate: 0.2,
+            log: 0
         }, options.training);
-
-        this._validateOrThrow(options);
 
         this.id = uuid.v4();
         this.name = options.name;
-        this.config.activationFunction = options.activationFunction;
-        this.config.layersSize = options.layersSize;
-        this.config.layersCount = options.layersSize.length;
-        this.config.training.learningRate = options.training.learningRate;
-        this.config.training.error = options.training.error;
-        this.config.training.epoch = options.training.epoch;
-        this.config.training.log = options.training.log;
+        this.config = {
+            training: {
+                learningRate: options.training.learningRate,
+                errorThreshold: options.training.errorThreshold,
+                iterations: options.training.iterations,
+                rate: options.rate,
+                log: options.training.log
+            },
+            debug: options.debug,
+            activationFunction: options.activationFunction,
+            layersSize: options.layersSize,
+            layersCount: options.layersSize.length
+        };
+        this.layers = { input: null, hidden: [], output: {} };
 
+        /* Generate layers according to the layersSize config */
+        const builtLayers = [];
         this.config.layersSize.map((size, i) => {
-           this.layers.push(new Layer({
-               index: i,
-               activationFunction: this.config.activationFunction,
-               neuronsCount: size
-           }));
+            builtLayers.push(new Layer({
+                index: i,
+                activationFunction: this.config.activationFunction,
+                learningRate: this.config.training.learningRate,
+                neuronsCount: size
+            }));
         });
-        this.layers.map((layer, i) => i < this.layers.length - 1 && layer.fillInputOutputNeuronIds(this.layers[i + 1]));
+        builtLayers.map((layer, i) => i < builtLayers.length - 1 && layer.initializeNeuronsConnections(builtLayers[i + 1]));
+
+        /* Finally split them */
+        this.layers.input = builtLayers.shift();
+        this.layers.output = builtLayers.pop();
+        this.layers.hidden = builtLayers;
     }
 
-    /**
-     * Valid network options before it's used to initialize the network config. Throw the options value isn't expected.
-     * @param {object} options Options to initialize the network
-     * @param {string} options.activationFunction The name of the activation function used to normalize result in each neuron
-     * @param {number} options.layersSize The size of each layer
-     * @param {number} options.training.learningRate The value used to compute the output value in each neuron
-     * @param {number} options.training.error The maximum error value to reach
-     * @param {number} options.training.epoch The number of iteration training
-     * @param {number} options.training.log Show logs every X iterations
-     * @private
-     */
-    _validateOrThrow(options) {
-        if (typeof options.name !== 'string') throw new Error('The name must be a string.');
-        if (!Object.keys(utils.activationFunction).includes(options.activationFunction)) {
-            throw new Error('The activationFunction must be in the utils.activationFunction.');
+    activate(input) {
+        this.layers.input.activate(input);
+        for (const layer of this.layers.hidden) {
+            layer.activate();
         }
-        if (!Array.isArray(options.layersSize)) throw new Error('The layersSize must be an array of number.');
-        if (options.layersSize.length < 2) throw new Error('The layersSize must have 2 or more values as input and output.');
-        if (typeof options.training.learningRate !== 'number') throw new Error('The training.learningRate must be a number.');
-        if (typeof options.training.error !== 'number') throw new Error('The training.error must be a number.');
-        if (typeof options.training.epoch !== 'number') throw new Error('The training.epoch must be a number.');
-        if (typeof options.training.log !== 'number') throw new Error('The training.log must be a number.');
+
+        return this.layers.output.activate();
     }
 
-    /**
-     * @param {Array} set
-     */
     train(set) {
-        let epochCount = 0;
-        let result = null;
+        let error = 1;
+        let iterations = 0;
 
-        while (epochCount < this.config.training.epoch) {
-            epochCount++;
-            for (const data of set) {
-                const neuronsResult = this.layers.reduce((values, layer) => {
-                    return layer.compute(values);
-                }, data.input);
+        while (iterations < this.config.training.iterations && error > this.config.training.errorThreshold) {
+            iterations++;
+            error += this._trainSet(set, this.config.training.rate, utils.costFn.CROSSENTROPY);
+            error /= set.length;
 
-                result = neuronsResult.reduce((previous, neuron) => {
-                    previous += neuron.outputValue;
-                    return previous;
-                }, 0);
-            }
-
-            if (this.config.training.log > 0 && epochCount % this.config.training.log === 0) {
-                console.log(`${epochCount} already done`);
+            /* Logging for each epoch % according to the user configuration */
+            if (this.config.training.log > 0 && iterations % this.config.training.log === 0) {
+                console.log(`iterations ${iterations}/${this.config.training.iterations} done -- Error ${error}.`);
             }
         }
 
-        return result;
+        return { error, iterations };
+    }
+
+    // back-propagate the error into the network
+    propagate(rate, output) {
+        const reverseHiddenLayer = Array.from(this.layers.hidden).reverse();
+        this.layers.output.propagate(rate, output);
+        for (const layer of reverseHiddenLayer) {
+            layer.propagate(rate);
+        }
     }
 
     toJSON() {
@@ -132,7 +101,26 @@ export default class Network {
             id: this.id,
             name: this.name,
             config: this.config,
-            layers: this.layers.map(l => l.toJSON())
+            layers: {
+                input: this.layers.input.toJSON(),
+                hidden: this.layers.hidden.map(l => l.toJSON()),
+                output: this.layers.output.toJSON()
+            }
         };
+    }
+
+    _trainSet(set, currentRate, costFn) {
+        let errorSum = 0
+        for (const data of set) {
+            const result = this.activate(data.input);
+            errorSum += costFn(data.output, result);
+
+            /* Show computing information to debug network */
+            if (this.config.training.debug) {
+                console.log(`DEBUG:: data ${JSON.stringify(data)} -- output network result ${result} -- Error sum ${errorSum}.`);
+            }
+        }
+
+        return errorSum;
     }
 }

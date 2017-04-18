@@ -2,6 +2,7 @@ import uuid from 'uuid';
 
 import utils from './utils';
 import Neuron from './neuron';
+import Connection from './connection';
 
 /**
  * @class Layer
@@ -9,87 +10,74 @@ import Neuron from './neuron';
  */
 export default class Layer {
     constructor(options = {}) {
-        this.id = null;
-        this.index = 0;
-        this.config = {
-            activationFunction: '',
-            neuronsCount: 0
-        };
-        this.neurons = [];
-
-        this._initialize(options);
-    }
-
-    /**
-     * Initialize the layer with options value given, if not, use the default value configured.
-     * @param {object} options Options to initialize the layer
-     * @param {number} options.index The index of the layer
-     * @param {string} [options.activationFunction = 'SIGMOID'] The name of the activation function used to normalize result in each neuron
-     * @param {number} [options.neuronsCount = 10] The number of neuron pushed in the layer
-     * @private
-     */
-    _initialize(options) {
         options = Object.assign({
             activationFunction: utils.activationFunction.SIGMOID,
+            learningRate: 0.1,
             neuronsCount: 10
         }, options);
 
-        this._validateOrThrow(options);
-
         this.id = uuid.v4();
-        this.index = options.index;
-        this.config.activationFunction = options.activationFunction;
-        this.config.neuronsCount = options.neuronsCount;
+        this.index = options.index || -1;
+        this.config = {
+            activationFunction: options.activationFunction,
+            learningRate: options.learningRate,
+            neuronsCount: options.neuronsCount
+        };
+        this.neurons = [];
 
         this.neurons.push(...Array.from({ length: options.neuronsCount }).map(() => new Neuron({
-            activationFunction: options.activationFunction
+            activationFunction: this.config.activationFunction,
+            learningRate: this.config.learningRate
         })));
     }
 
-    /**
-     * Valid layer options before it's used to initialize the layer config. Throw the options value isn't expected.
-     * @param {object} options Options to initialize the layer
-     * @param {number} options.index The index of the layer
-     * @param {string} options.activationFunction The name of the activation function used to normalize result in the neuron
-     * @param {number} options.neuronsCount The name of the activation function used to normalize result in a neuron
-     * @private
-     */
-    _validateOrThrow(options) {
-        if (!Object.keys(utils.activationFunction).includes(options.activationFunction)) {
-            throw new Error('The activationFunction must be in the utils.activationFunction.');
-        }
-        if (typeof options.index !== 'number') throw new Error('The index must be a number.');
-        if (typeof options.neuronsCount !== 'number') throw new Error('The neuronsCount must be a number.');
-    }
-
-    /**
-     * Add all ids of each input neuron of the layer for each neuron of the next layer.
-     * Add all ids of each nextLayer neuron for each neuron of the layer.
-     * @param {Layer} nextLayer
-     */
-    fillInputOutputNeuronIds(nextLayer) {
+    initializeNeuronsConnections(to) {
         for (const neuron of this.neurons) {
-            for (const nextLayerNeuron of nextLayer.neurons) {
-                !neuron.inputNeuronIds.includes(nextLayer.id) && neuron.addOutputNeuronId(nextLayerNeuron.id);
-                !nextLayerNeuron.outputNeuronIds.includes(neuron.id) && nextLayerNeuron.addInputNeuronId(neuron.id);
+            for (const toNeuron of to.neurons) {
+                const connection = new Connection(neuron, toNeuron);
+                neuron.connect(connection, 'output');
+                toNeuron.connect(connection, 'input');
             }
         }
     }
 
-    /**
-     * Compute output value for each neuron of the layer.
-     * @param {Array} values Array of number or neurons
-     * @returns {Array}
-     */
-    compute(values) {
-        if (this.index === 0) {
-            /* Input are number in the case of input layer computation */
-            return this.neurons.map(neuron => neuron.compute(values));
+    activate(input = undefined) {
+        let i = 0;
+        const activations = [];
+
+        if (typeof input !== 'undefined') {
+            if (input.length !== this.neurons.length) throw new Error('The input size must be the same of layer size.');
+
+            for (const neuron of this.neurons) {
+                const activation = neuron.activate(input[i]);
+                activations.push(activation);
+                i++;
+            }
         } else {
-            /* Input are neuron in the case of other layer */
-            return this.neurons.map(neuron => neuron.compute(values.map(inputNeuron => {
-                return neuron.inputNeuronIds.includes(inputNeuron.id) && inputNeuron.outputValue;
-            })));
+            for (const neuron of this.neurons) {
+                const activation = neuron.activate();
+                activations.push(activation);
+                i++;
+            }
+        }
+
+        return activations;
+    }
+
+    propagate(rate, output = undefined) {
+        let i = 0;
+        if (typeof output !== 'undefined') {
+            if (output.length !== this.config.neuronsCount) throw new Error("The output size must be the same of layer size.");
+
+            for (const neuron of this.neurons) {
+                neuron.propagate(rate, output[i]);
+                i++;
+            }
+        } else {
+            for (const neuron of this.neurons) {
+                neuron.propagate(rate);
+                i++;
+            }
         }
     }
 

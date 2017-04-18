@@ -2,32 +2,49 @@ const assert = require('chai').assert;
 const fs = require('fs');
 
 const utils = require('../src/utils');
-const Layer = require('../src/layer');
-const Neuron = require('../src/neuron');
 const Network = require('../src/network');
 
-// FIXME this is temporary for test the network and show what is computed inside.
 describe('Network', () => {
-    it('should create a new network', () => {
+    it('should create a complete network', () => {
         /* Create network from scratch */
         const network = new Network({
             activationFunction: utils.activationFunction.SIGMOID,
-            layersSize: [10, 1, 1],
+            layersSize: [2, 5, 1],
             training: {
-                epoch: 10,
-                logging: true,
-                logEveryTimes: 10
+                epoch: 1000,
+                log: 10
             }
         });
 
         network.train([{
             input: [0, 0],
             output: [0]
+        }, {
+            input: [0, 1],
+            output: [1]
+        }, {
+            input: [1, 0],
+            output: [1]
+        }, {
+            input: [1, 1],
+            output: [0]
         }]);
 
+        const json = JSON.stringify(network.toJSON(), null, 4);
         const stream = fs.createWriteStream(`./results/newtork-${new Date().toISOString().slice(0, 19)}_${network.id}.json`);
-        const networkBuffer = Buffer(JSON.stringify(network.toJSON(), null, 4));
-        stream.write(networkBuffer);
+        stream.write(json);
         stream.end();
+    });
+
+    it('should create bidirectionnal connection between neurons', () => {
+        const network = new Network({
+            activationFunction: utils.activationFunction.SIGMOID,
+            layersSize: [10, 5, 1]
+        });
+
+        const inputLayerFirstNeuron = network.layers.input.neurons[0];
+        const firstHiddenLayerFirstNeuron = network.layers.hidden[0].neurons[0];
+
+        assert.equal(firstHiddenLayerFirstNeuron.connections.input[inputLayerFirstNeuron.id].from.id, inputLayerFirstNeuron.id);
     });
 });

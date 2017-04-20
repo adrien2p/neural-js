@@ -1,4 +1,5 @@
 import uuid from 'uuid';
+const fs = require('fs');
 
 import utils from './utils';
 import Layer from './layer';
@@ -18,10 +19,10 @@ export default class Network {
         }, options);
 
         options.training = Object.assign({
+            costFn: utils.costFn.CROSS_ENTROPY,
             learningRate: 0.1,
             errorThreshold: 0.005,
             iterations: 1000,
-            rate: 0.2,
             log: 0
         }, options.training);
 
@@ -29,10 +30,10 @@ export default class Network {
         this.name = options.name;
         this.config = {
             training: {
+                costFn: options.training.costFn,
                 learningRate: options.training.learningRate,
                 errorThreshold: options.training.errorThreshold,
                 iterations: options.training.iterations,
-                rate: options.rate,
                 log: options.training.log
             },
             debug: options.debug,
@@ -48,13 +49,11 @@ export default class Network {
             builtLayers.push(new Layer({
                 index: i,
                 activationFunction: this.config.activationFunction,
-                learningRate: this.config.training.learningRate,
                 neuronsCount: size
             }));
         });
-        builtLayers.map((layer, i) => i < builtLayers.length - 1 && layer.initializeNeuronsConnections(builtLayers[i + 1]));
+        builtLayers.map((layer, i) => i < (builtLayers.length - 1) && layer.initializeNeuronsConnections(builtLayers[i + 1]));
 
-        /* Finally split them */
         this.layers.input = builtLayers.shift();
         this.layers.output = builtLayers.pop();
         this.layers.hidden = builtLayers;
@@ -75,12 +74,12 @@ export default class Network {
 
         while (iterations < this.config.training.iterations && error > this.config.training.errorThreshold) {
             iterations++;
-            error += this._trainSet(set, this.config.training.rate, utils.costFn.CROSSENTROPY);
+            error += this._trainSet(set, this.config.training.learningRate, this.config.training.costFn);
             error /= set.length;
 
-            /* Logging for each epoch % according to the user configuration */
-            if (this.config.training.log > 0 && iterations % this.config.training.log === 0) {
-                console.log(`iterations ${iterations}/${this.config.training.iterations} done -- Error ${error}.`);
+            /* Show computing information to debug network */
+            if (this.config.training.log && iterations % this.config.training.log === 0) {
+                console.log(`LOG::train:: iterations ${iterations} -- Error : ${error}`);
             }
         }
 
@@ -88,11 +87,11 @@ export default class Network {
     }
 
     // back-propagate the error into the network
-    propagate(rate, output) {
-        const reverseHiddenLayer = Array.from(this.layers.hidden).reverse();
-        this.layers.output.propagate(rate, output);
-        for (const layer of reverseHiddenLayer) {
-            layer.propagate(rate);
+    propagate(learningRate, outputResult) {
+        const reverseLayers = Array.from(this.layers.hidden).reverse();
+        this.layers.output.propagate(learningRate, outputResult);
+        for (const layer of reverseLayers) {
+            layer.propagate(learningRate);
         }
     }
 
@@ -109,16 +108,13 @@ export default class Network {
         };
     }
 
-    _trainSet(set, currentRate, costFn) {
-        let errorSum = 0
+    _trainSet(set, learningRate, costFn) {
+        let errorSum = 0;
         for (const data of set) {
-            const result = this.activate(data.input);
-            errorSum += costFn(data.output, result);
+            const outputResult = this.activate(data.input);
+            this.propagate(learningRate, outputResult);
 
-            /* Show computing information to debug network */
-            if (this.config.training.debug) {
-                console.log(`DEBUG:: data ${JSON.stringify(data)} -- output network result ${result} -- Error sum ${errorSum}.`);
-            }
+            errorSum += costFn(data.output, outputResult);
         }
 
         return errorSum;

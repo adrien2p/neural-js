@@ -2,7 +2,6 @@ import uuid from 'uuid';
 
 import utils from './utils';
 import Neuron from './neuron';
-import Connection from './connection';
 
 /**
  * @class Layer
@@ -12,7 +11,6 @@ export default class Layer {
     constructor(options = {}) {
         options = Object.assign({
             activationFunction: utils.activationFunction.SIGMOID,
-            learningRate: 0.1,
             neuronsCount: 10
         }, options);
 
@@ -20,32 +18,33 @@ export default class Layer {
         this.index = options.index || -1;
         this.config = {
             activationFunction: options.activationFunction,
-            learningRate: options.learningRate,
             neuronsCount: options.neuronsCount
         };
         this.neurons = [];
 
         this.neurons.push(...Array.from({ length: options.neuronsCount }).map(() => new Neuron({
-            activationFunction: this.config.activationFunction,
-            learningRate: this.config.learningRate
+            activationFunction: this.config.activationFunction
         })));
     }
 
+    /**
+     * Add input/output connection to each neuron of the layer and the next layer.
+     * @param {Layer} to The next layer to connection neuron
+     */
     initializeNeuronsConnections(to) {
         for (const neuron of this.neurons) {
             for (const toNeuron of to.neurons) {
-                const connection = new Connection(neuron, toNeuron);
-                neuron.connect(connection, 'output');
-                toNeuron.connect(connection, 'input');
+                toNeuron.connect(neuron, toNeuron);
+                neuron.connect(neuron, toNeuron, 'outputs');
             }
         }
     }
 
-    activate(input = undefined) {
+    activate(input = null) {
         let i = 0;
         const activations = [];
 
-        if (typeof input !== 'undefined') {
+        if (input !== null) {
             if (input.length !== this.neurons.length) throw new Error('The input size must be the same of layer size.');
 
             for (const neuron of this.neurons) {
@@ -61,21 +60,24 @@ export default class Layer {
             }
         }
 
+        //console.log(activations);
         return activations;
     }
 
-    propagate(rate, output = undefined) {
+    propagate(learningRate, outputResult = null) {
         let i = 0;
-        if (typeof output !== 'undefined') {
-            if (output.length !== this.config.neuronsCount) throw new Error("The output size must be the same of layer size.");
+        if (outputResult !== null) {
+            if (outputResult.length !== this.config.neuronsCount) throw new Error("The output size must be the same of layer size.");
 
             for (const neuron of this.neurons) {
-                neuron.propagate(rate, output[i]);
+                neuron.propagate(learningRate, outputResult[i]);
                 i++;
             }
         } else {
             for (const neuron of this.neurons) {
-                neuron.propagate(rate);
+                //console.log('before', neuron.connections.inputs[Object.keys(neuron.connections.inputs)[0]].weight);
+                neuron.propagate(learningRate);
+                //console.log('after', neuron.connections.inputs[Object.keys(neuron.connections.inputs)[0]].weight);
                 i++;
             }
         }
@@ -83,7 +85,7 @@ export default class Layer {
 
     /**
      * Export the object to json format.
-     * @returns {{id: *, config: ({activationFunction: string, neuronsCount: number, learningRate: number, error: number}|*), neurons: Array}}
+     * @returns {{id: *, config: ({activationFunction: string, neuronsCount: number, error: number}|*), neurons: Array}}
      */
     toJSON() {
         return {

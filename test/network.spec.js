@@ -5,14 +5,17 @@ const utils = require('../src/utils');
 const Network = require('../src/network');
 
 describe('Network', () => {
-    it('should create a complete network', () => {
+    it.only('should create a complete network', () => {
         /* Create network from scratch */
         const network = new Network({
             activationFunction: utils.activationFunction.SIGMOID,
             layersSize: [2, 5, 1],
+            debug: false,
             training: {
-                epoch: 1000,
-                log: 10
+                costFn: utils.costFn.CROSS_ENTROPY,
+                learningRate: 0.2,
+                iterations: 1000,
+                log: 5
             }
         });
 
@@ -45,6 +48,6 @@ describe('Network', () => {
         const inputLayerFirstNeuron = network.layers.input.neurons[0];
         const firstHiddenLayerFirstNeuron = network.layers.hidden[0].neurons[0];
 
-        assert.equal(firstHiddenLayerFirstNeuron.connections.input[inputLayerFirstNeuron.id].from.id, inputLayerFirstNeuron.id);
+        assert.equal(firstHiddenLayerFirstNeuron.connections.inputs[inputLayerFirstNeuron.id].from.id, inputLayerFirstNeuron.id);
     });
 });

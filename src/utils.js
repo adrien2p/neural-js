@@ -4,7 +4,7 @@ export default {
         TANH: 'TANH'
     },
     costFn: {
-        CROSSENTROPY: (output, result) => {
+        CROSS_ENTROPY: (output, result) => {
             let crossEntropy = 0;
             result.map((value, i) => {
                 crossEntropy -= (output[i] * Math.log(value + 1e-15)) + ((1 - output[i]) * Math.log((1 + 1e-15) - value)); // +1e-15 is a tiny push away to avoid Math.log(0)

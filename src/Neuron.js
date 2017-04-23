@@ -131,7 +131,7 @@ export default class Neuron {
 
         Object.keys(this.neighbors).map(neighbor => {
             // neighborsJSON[neighbor] = this.neighbors[neighbor].toJSON(true)
-            console.log(this.neighbors[neighbor]);
+            console.log(this.neighbors[neighbor].toJSON());
         });
 
         return {

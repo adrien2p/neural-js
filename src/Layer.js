@@ -54,6 +54,31 @@ export default class Layer {
     }
 
     /**
+     * Activate all the layer neurons and return all computed activation values.
+     * @param {number} [input] The input pass through the layer to activate the input layer neurons
+     * @returns {Array}
+     */
+    activate(input) {
+        const activations = [];
+
+        let index = 0;
+        if (typeof input !== 'undefined') {
+            if (input.length !== Object.keys(this.neurons).length) throw new Error('The input size must be the same as the number of neurons in the layer.');
+            for (const neuron of Object.keys(this.neurons)) {
+                activations.push(this.neurons[neuron].activate(input[index]));
+                index++;
+            }
+        } else {
+            for (const neuron of Object.keys(this.neurons)) {
+                activations.push(this.neurons[neuron].activate());
+                index++;
+            }
+        }
+
+        return activations;
+    }
+
+    /**
      * Return a JSON object representing the layer.
      * @returns {{id: number, type: string, neurons: {Neuron}}}
      * @public

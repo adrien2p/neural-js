@@ -63,7 +63,7 @@ export default class Neuron {
 
     /**
      * Active the neuron, compute the new state, activation and derivative value.
-     * @param {number} input The input value generally passed for the input layer neurons
+     * @param {number} [input] The input value generally passed for the input layer neurons
      * @returns {number|*}
      */
     activate(input) {
@@ -83,6 +83,8 @@ export default class Neuron {
 
         this.activation = this.squash(this.state);
         this.derivative = this.squash(this.state, true);
+
+        return this.activation;
     }
 
     /**
@@ -130,8 +132,7 @@ export default class Neuron {
         });
 
         Object.keys(this.neighbors).map(neighbor => {
-            // neighborsJSON[neighbor] = this.neighbors[neighbor].toJSON(true)
-            console.log(this.neighbors[neighbor].toJSON());
+            neighborsJSON[neighbor] = !stopPropagation ? this.neighbors[neighbor].toJSON(true) : 'Neuron';
         });
 
         return {

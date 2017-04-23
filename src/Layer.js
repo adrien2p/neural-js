@@ -55,8 +55,8 @@ export default class Layer {
 
     /**
      * Activate all the layer neurons and return all computed activation values.
-     * @param {number} [input] The input pass through the layer to activate the input layer neurons
-     * @returns {Array}
+     * @param {Array<number>} [input] The input pass through the layer to activate the input layer neurons
+     * @returns {Array<number>}
      */
     activate(input) {
         const activations = [];

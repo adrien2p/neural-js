@@ -69,6 +69,24 @@ export default class Network {
         });
     }
 
+    /**
+     * Take input values and predict the expected result.
+     * @param {Array<number>} input The input values to predict
+     * @returns {Array<number>}
+     */
+    predict(input) {
+        this.layers.input.activate(input);
+        for (const layer of this.layers.hidden) {
+            layer.activate();
+        }
+
+        return this.layers.output.activate();
+    }
+
+    /**
+     * Return a JSON object representing the layer.
+     * @returns {{id: number, name: string, activationFunction: (string|*), layers: {config: Object, input: Layer, hidden: Array<Layer>, output: Layer}}}
+     */
     toJSON() {
         return {
             id: this.id,

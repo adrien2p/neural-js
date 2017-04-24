@@ -74,13 +74,50 @@ export default class Network {
      * @param {Array<number>} input The input values to predict
      * @returns {Array<number>}
      */
-    predict(input) {
+    activate(input) {
         this.layers.input.activate(input);
-        for (const layer of this.layers.hidden) {
-            layer.activate();
+        for (const hiddenLayer of this.layers.hidden) {
+            hiddenLayer.activate();
         }
 
         return this.layers.output.activate();
+    }
+
+    propagate(learningRate, expected) {
+        this.layers.output.propagate(learningRate, expected);
+
+        const hiddenLayersCopy = Array.from(this.layers.hidden);
+        (hiddenLayersCopy.reverse()).map(layer => layer.propagate(learningRate));
+    }
+
+    train(options = {
+        costFunction: utils.costFn.CROSS_ENTROPY,
+        learningRate: 0.1,
+        error: 0.005,
+        epoch: 1000,
+        logging: 0
+    }, set) {
+        const startAt = Date.now();
+        let error = 1;
+        let iterations = 0;
+
+        while (iterations < options.epoch && error > options.error) {
+            error = 0;
+            iterations++;
+
+            error += this._trainSet(set, options);
+            error /= set.length;
+
+            if (options.logging && iterations % options.logging === 0) {
+                console.log(`LOG::train -- Iterations ${iterations}/${options.epoch} -- Error ${error}.`);
+            }
+        }
+
+        return {
+            error: error,
+            iterations: iterations,
+            executionTime: (Date.now() - startAt)
+        };
     }
 
     /**
@@ -99,5 +136,20 @@ export default class Network {
                 output: this.layers.output.toJSON()
             }
         };
+    }
+
+    _trainSet(set, options) {
+        let errorSum = 0;
+        for (const data of set) {
+            const input = data.input;
+            const expected = data.output;
+
+            const outputResult = this.activate(input);
+            this.propagate(options.learningRate, expected);
+
+            errorSum += options.costFunction(expected, outputResult);
+        }
+
+        return errorSum;
     }
 }

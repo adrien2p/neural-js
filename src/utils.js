@@ -4,24 +4,24 @@ export default {
         TANH: 'TANH'
     },
     costFn: {
-        CROSS_ENTROPY: (output, result) => {
+        CROSS_ENTROPY: (expected, output) => {
             let crossEntropy = 0;
-            result.map((value, i) => {
-                crossEntropy -= (output[i] * Math.log(value + 1e-15)) + ((1 - output[i]) * Math.log((1 + 1e-15) - value)); // +1e-15 is a tiny push away to avoid Math.log(0)
+            output.map((value, i) => {
+                crossEntropy -= (expected[i] * Math.log(value + 1e-15)) + ((1 - value) * Math.log((1 + 1e-15) - output[i]));
             });
             return crossEntropy;
         },
-        MSE: (output, result) => {
+        MSE: (expected, output) => {
             let mse = 0;
-            result.map((value, i) => {
-                mse += Math.pow(output[i] - value, 2);
+            output.map((value, i) => {
+                mse += Math.pow(expected[i] - value, 2);
             });
-            return mse / result.length;
+            return mse / output.length;
         },
-        BINARY: (output, result) => {
+        BINARY: (expected, output) => {
             let misses = 0;
-            result.map((value, i) => {
-                misses += Math.round(output[i] * 2) !== Math.round(value * 2);
+            output.map((value, i) => {
+                misses += Math.round(expected[i] * 2) !== Math.round(value * 2);
             });
             return misses;
         }

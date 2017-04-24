@@ -22,7 +22,9 @@ export default class Neuron {
         this.activation = 0;
         this.derivative = 0;
         this.bias = Math.random() * 0.2 * 0.1;
-        this.error = 0;
+        this.error = {
+            delta: 0
+        };
         this.neighbors = {};
         this.connections = {
             incoming: {},
@@ -32,33 +34,21 @@ export default class Neuron {
 
     /**
      * Create an incoming connection from another neuron to the actual neuron.
-     * @param {Neuron} from The neuron connected to this
+     * @param {object} connection
      * @function
      * @public
      */
-    connect(from) {
-        const connectionId = uuid.v4();
-        this.connections.incoming[connectionId] = {
-            id: connectionId,
-            from: from,
-            to: this,
-            weight: Math.random() * 0.2 * 0.1
-        };
+    connect(connection) {
+        this.connections.incoming[connection.id] = connection;
     }
 
     /**
      * Crate a projected connection from the actual neuron to another one.
-     * @param {Neuron} to The neuron onto the connection is projected
+     * @param {object} connection
      * @public
      */
-    project(to) {
-        const connectionId = uuid.v4();
-        this.connections.projected[connectionId] = {
-            id: connectionId,
-            from: this,
-            to: to,
-            weight: Math.random() * 0.2 * 0.1
-        };
+    project(connection) {
+        this.connections.projected[connection.id] = connection;
     }
 
     /**
@@ -77,14 +67,44 @@ export default class Neuron {
 
         for (const connection of Object.keys(this.connections.incoming)) {
             const incomingConnection = this.connections.incoming[connection];
-            const neuron = connection.from;
-            this.state += incomingConnection.weight * neuron.activation;
+            const neuron = incomingConnection.from;
+            this.state += this.bias + incomingConnection.weight * neuron.activation;
         }
 
         this.activation = this.squash(this.state);
         this.derivative = this.squash(this.state, true);
 
         return this.activation;
+    }
+
+    /**
+     * Process the back propagation algorithm to adjust connections weight.
+     * https://mattmazur.com/2015/03/17/a-step-by-step-backpropagation-example/
+     * @param learningRate
+     * @param target
+     */
+    propagate(learningRate, target) {
+        let error = 0;
+
+        if (typeof target !== 'undefined') {
+            this.error.delta = this.derivative * (target - this.activation);
+        } else {
+            for (const connection of Object.keys(this.connections.projected)) {
+                const projectedConnection = this.connections.projected[connection];
+                const neuron = projectedConnection.to;
+
+                error += neuron.error.delta * projectedConnection.weight;
+            }
+
+            this.error.delta = this.derivative * error;
+        }
+
+        for (const connection of Object.keys(this.connections.incoming)) {
+            const incomingConnection = this.connections.incoming[connection];
+            incomingConnection.weight += learningRate * incomingConnection.from.activation * this.error.delta;
+        }
+
+        this.bias += learningRate * this.error.delta;
     }
 
     /**
@@ -96,8 +116,8 @@ export default class Neuron {
     squash(value, derivative = false) {
         switch (this.activationFunction) {
             case 'SIGMOID':
-                const sigmoidFn = 1 / (1 - Math.exp(-value));
-                const sigmoidFnDerivative = sigmoidFn - (1 - sigmoidFn);
+                const sigmoidFn = 1 / (1 + Math.exp(-value));
+                const sigmoidFnDerivative = sigmoidFn * (1 - sigmoidFn);
                 if (derivative) return sigmoidFnDerivative;
                 if (!derivative) return sigmoidFn;
                 break;
@@ -120,14 +140,14 @@ export default class Neuron {
         Object.keys(this.connections.incoming).map(connection => {
             incomingConnectionsJSON[connection] = Object.assign({}, this.connections.incoming[connection], {
                 from: !stopPropagation ? this.connections.incoming[connection].from.toJSON(true) : 'Neuron',
-                to: !stopPropagation ? this.connections.incoming[connection].from.toJSON(true) : 'Neuron'
+                to: !stopPropagation ? this.connections.incoming[connection].to.toJSON(true) : 'Neuron'
             });
         });
 
         Object.keys(this.connections.projected).map(connection => {
             projectedConnectionsJSON[connection] = Object.assign({}, this.connections.projected[connection], {
                 from: !stopPropagation ? this.connections.projected[connection].from.toJSON(true) : 'Neuron',
-                to: !stopPropagation ? this.connections.projected[connection].from.toJSON(true) : 'Neuron'
+                to: !stopPropagation ? this.connections.projected[connection].to.toJSON(true) : 'Neuron'
             });
         });
 

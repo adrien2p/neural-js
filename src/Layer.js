@@ -47,8 +47,14 @@ export default class Layer {
     project(nextLayer) {
         for (const neuron of Object.keys(this.neurons)) {
             for (const nextLayerNeuron of Object.keys(nextLayer.neurons)) {
-                this.neurons[neuron].project(nextLayer.neurons[nextLayerNeuron]);
-                nextLayer.neurons[nextLayerNeuron].connect(this.neurons[neuron]);
+                const connection = {
+                    id: uuid.v4(),
+                    from: this.neurons[neuron],
+                    to: nextLayer.neurons[nextLayerNeuron],
+                    weight: Math.random() * 0.2 * 0.1
+                };
+                this.neurons[neuron].project(connection);
+                nextLayer.neurons[nextLayerNeuron].connect(connection);
             }
         }
     }
@@ -63,19 +69,37 @@ export default class Layer {
 
         let index = 0;
         if (typeof input !== 'undefined') {
-            if (input.length !== Object.keys(this.neurons).length) throw new Error('The input size must be the same as the number of neurons in the layer.');
+            if (input.length !== Object.keys(this.neurons).length) throw new Error('The input size must be the same as the number of neurons in the input layer.');
             for (const neuron of Object.keys(this.neurons)) {
-                activations.push(this.neurons[neuron].activate(input[index]));
+                const activation = this.neurons[neuron].activate(input[index])
+                activations.push(activation);
                 index++;
             }
         } else {
             for (const neuron of Object.keys(this.neurons)) {
-                activations.push(this.neurons[neuron].activate());
+                const activation = this.neurons[neuron].activate();
+                activations.push(activation);
                 index++;
             }
         }
 
         return activations;
+    }
+
+    propagate(learningRate, expected) {
+        let index = 0;
+        if (typeof expected !== 'undefined') {
+            if (expected.length !== Object.keys(this.neurons).length) throw new Error('The input size must be the same as the number of neurons in the output layer.');
+            for (const neuron of Object.keys(this.neurons)) {
+                this.neurons[neuron].propagate(learningRate, expected[index]);
+                index++;
+            }
+        } else {
+            for (const neuron of Object.keys(this.neurons)) {
+                this.neurons[neuron].propagate(learningRate);
+                index++;
+            }
+        }
     }
 
     /**

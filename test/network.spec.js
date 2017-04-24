@@ -1,6 +1,6 @@
 const assert = require('chai').assert;
 const fs = require('fs');
-
+const synaptic = require('synaptic');
 const utils = require('../src/utils');
 const Network = require('../src/network');
 
@@ -19,11 +19,11 @@ describe('Network', () => {
         });
 
         const trainingOptions = {
-            costFunction: utils.costFn.MSE,
+            costFunction: utils.costFn.CROSS_ENTROPY,
             learningRate: 0.01,
-            error: 0.005,
-            epoch: 20000,
-            logging: 100
+            error: 0.001,
+            epoch: 1000,
+            logging: 5
         };
 
         network.train(trainingOptions, [{
@@ -40,12 +40,15 @@ describe('Network', () => {
             output: [0]
         }]);
 
-        console.log(network.activate([1, 1]));
+        console.log(network.activate([0, 0]));
+        console.log(network.activate([0, 1]));
+        console.log(network.activate([1, 0]));
         console.log(network.activate([0, 0]));
 
         const json = JSON.stringify(network.toJSON(), null, 4);
         const stream = fs.createWriteStream(`./results/newtork-${new Date().toISOString().slice(0, 19)}_${network.id}.json`);
         stream.write(json);
         stream.end();
+   
     });
 });

@@ -47,11 +47,13 @@ export default class Layer {
     project(nextLayer) {
         for (const neuron of Object.keys(this.neurons)) {
             for (const nextLayerNeuron of Object.keys(nextLayer.neurons)) {
+                const weight = Math.random() * 0.2 * 0.1;
                 const connection = {
                     id: uuid.v4(),
                     from: this.neurons[neuron],
                     to: nextLayer.neurons[nextLayerNeuron],
-                    weight: Math.random() * 0.2 * 0.1
+                    oldWeight: weight,
+                    weight: weight
                 };
                 this.neurons[neuron].project(connection);
                 nextLayer.neurons[nextLayerNeuron].connect(connection);
@@ -71,7 +73,7 @@ export default class Layer {
         if (typeof input !== 'undefined') {
             if (input.length !== Object.keys(this.neurons).length) throw new Error('The input size must be the same as the number of neurons in the input layer.');
             for (const neuron of Object.keys(this.neurons)) {
-                const activation = this.neurons[neuron].activate(input[index])
+                const activation = this.neurons[neuron].activate(input[index]);
                 activations.push(activation);
                 index++;
             }

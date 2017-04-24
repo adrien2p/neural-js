@@ -87,13 +87,13 @@ export default class Neuron {
         let error = 0;
 
         if (typeof target !== 'undefined') {
-            this.error.delta = this.derivative * (target - this.activation);
+            this.error.delta = target - this.activation;
         } else {
             for (const connection of Object.keys(this.connections.projected)) {
                 const projectedConnection = this.connections.projected[connection];
                 const neuron = projectedConnection.to;
 
-                error += neuron.error.delta * projectedConnection.weight;
+                error += neuron.error.delta * projectedConnection.oldWeight;
             }
 
             this.error.delta = this.derivative * error;
@@ -101,10 +101,9 @@ export default class Neuron {
 
         for (const connection of Object.keys(this.connections.incoming)) {
             const incomingConnection = this.connections.incoming[connection];
-            incomingConnection.weight += learningRate * incomingConnection.from.activation * this.error.delta;
+            incomingConnection.oldWeight = incomingConnection.weight;
+            incomingConnection.weight += learningRate * this.error.delta * this.derivative * incomingConnection.from.activation;
         }
-
-        this.bias += learningRate * this.error.delta;
     }
 
     /**

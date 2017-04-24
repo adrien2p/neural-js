@@ -148,6 +148,7 @@ export default class Network {
             this.propagate(options.learningRate, expected);
 
             errorSum += options.costFunction(expected, outputResult);
+
         }
 
         return errorSum;

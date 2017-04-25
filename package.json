@@ -6,7 +6,7 @@
   "description": "Easy javascript library for neural network",
   "main": "dist/neural.js",
   "scripts": {
-    "test": "mocha --compilers js:babel-core/register --require babel-polyfill --colors ./test/**/*.spec.js",
+    "test": "mocha --compilers js:babel-core/register --require babel-polyfill --colors ./test/**/*.spec.js -t 20000",
     "test:watch": "mocha --colors -w ./test/**/*.spec.js",
     "build:prod": "webpack --config=webpack.config.js --progress --colors --env=prod",
     "build:dev": "webpack --config=webpack.config.js --progress --colors --watch --env=dev",

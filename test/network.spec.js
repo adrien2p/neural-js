@@ -12,7 +12,7 @@ describe('Network', () => {
             layers: {
                 config: {
                     input: 2,
-                    hidden: [3, 2, 3],
+                    hidden: [3],
                     output: 1
                 }
             }
@@ -20,20 +20,20 @@ describe('Network', () => {
 
         const trainingOptions = {
             costFunction: utils.costFn.CROSS_ENTROPY,
-            learningRate: 0.01,
-            error: 0.001,
-            epoch: 1000,
-            logging: 5
+            learningRate: 0.3,
+            error: 0.005,
+            epoch: 50000,
+            logging: 1000
         };
 
         network.train(trainingOptions, [{
             input: [0, 0],
             output: [0]
         }, {
-            input: [0, 1],
+            input: [1, 0],
             output: [1]
         }, {
-            input: [1, 0],
+            input: [0, 1],
             output: [1]
         }, {
             input: [1, 1],
@@ -43,7 +43,7 @@ describe('Network', () => {
         console.log(network.activate([0, 0]));
         console.log(network.activate([0, 1]));
         console.log(network.activate([1, 0]));
-        console.log(network.activate([0, 0]));
+        console.log(network.activate([1, 1]));
 
         const json = JSON.stringify(network.toJSON(), null, 4);
         const stream = fs.createWriteStream(`./results/newtork-${new Date().toISOString().slice(0, 19)}_${network.id}.json`);

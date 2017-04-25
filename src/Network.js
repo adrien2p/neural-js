@@ -87,12 +87,12 @@ export default class Network {
         this.layers.output.propagate(learningRate, expected);
 
         const hiddenLayersCopy = Array.from(this.layers.hidden);
-        (hiddenLayersCopy.reverse()).map(layer => layer.propagate(learningRate));
+        hiddenLayersCopy.reverse().map(layer => layer.propagate(learningRate));
     }
 
     train(options = {
         costFunction: utils.costFn.CROSS_ENTROPY,
-        learningRate: 0.1,
+        learningRate: 0.01,
         error: 0.005,
         epoch: 1000,
         logging: 0
@@ -147,8 +147,8 @@ export default class Network {
             const outputResult = this.activate(input);
             this.propagate(options.learningRate, expected);
 
+            //console.log('result', expected, outputResult);
             errorSum += options.costFunction(expected, outputResult);
-
         }
 
         return errorSum;

@@ -23,7 +23,8 @@ export default class Neuron {
         this.derivative = 0;
         this.bias = Math.random() * 0.2 * 0.1;
         this.error = {
-            delta: 0
+            responsibility: 0,
+            projected: 0
         };
         this.neighbors = {};
         this.connections = {
@@ -59,6 +60,7 @@ export default class Neuron {
     activate(input) {
         if (typeof input !== 'undefined') {
             this.activation = input;
+            this.derivative = 0;
             this.bias = 0;
             return this.activation;
         }
@@ -68,8 +70,9 @@ export default class Neuron {
         for (const connection of Object.keys(this.connections.incoming)) {
             const incomingConnection = this.connections.incoming[connection];
             const neuron = incomingConnection.from;
-            this.state += this.bias + incomingConnection.weight * neuron.activation;
+            this.state += incomingConnection.weight * neuron.activation;
         }
+        this.state += this.bias;
 
         this.activation = this.squash(this.state);
         this.derivative = this.squash(this.state, true);
@@ -87,23 +90,31 @@ export default class Neuron {
         let error = 0;
 
         if (typeof target !== 'undefined') {
-            this.error.delta = target - this.activation;
+            this.error.responsibility = this.error.projected = target - this.activation;
         } else {
             for (const connection of Object.keys(this.connections.projected)) {
                 const projectedConnection = this.connections.projected[connection];
                 const neuron = projectedConnection.to;
 
-                error += neuron.error.delta * projectedConnection.oldWeight;
+                error += neuron.error.responsibility * projectedConnection.oldWeight;
             }
 
-            this.error.delta = this.derivative * error;
+            this.error.responsibility = this.error.projected = error;
         }
 
         for (const connection of Object.keys(this.connections.incoming)) {
             const incomingConnection = this.connections.incoming[connection];
+
+            /*let gradient = this.error.projected;
+            for (const neighbor of Object.keys(this.neighbors)) {
+                gradient += this.neighbors[neighbor].error.responsibility;
+            }*/
+
             incomingConnection.oldWeight = incomingConnection.weight;
-            incomingConnection.weight += learningRate * this.error.delta * this.derivative * incomingConnection.from.activation;
+            incomingConnection.weight += learningRate * this.error.responsibility * this.derivative * incomingConnection.from.activation;
         }
+
+        this.bias += learningRate * this.error.responsibility;
     }
 
     /**
@@ -115,10 +126,16 @@ export default class Neuron {
     squash(value, derivative = false) {
         switch (this.activationFunction) {
             case 'SIGMOID':
-                const sigmoidFn = 1 / (1 + Math.exp(-value));
+                const sigmoidFn = 1 / (1 + Math.pow(Math.E, -value));
                 const sigmoidFnDerivative = sigmoidFn * (1 - sigmoidFn);
                 if (derivative) return sigmoidFnDerivative;
                 if (!derivative) return sigmoidFn;
+                break;
+            case 'TANH':
+                const tanhFn = (2 / (1 + Math.pow(Math.E, -2 * value))) - 1;
+                const tanhFnDerivative = tanhFn - Math.pow(tanhFn, 2);
+                if (derivative) return tanhFnDerivative;
+                if (!derivative) return tanhFn;
                 break;
             default:
                 throw new Error(`The activation function ${this.activationFunction} doesn't implemented yet.`);

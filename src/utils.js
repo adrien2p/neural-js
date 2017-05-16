@@ -1,7 +1,23 @@
 export default {
     activationFunction: {
-        SIGMOID: 'SIGMOID',
-        TANH: 'TANH'
+        SIGMOID: (value, derivative = false) => {
+            const sigmoidFn = 1 / (1 + Math.pow(Math.E, -value));
+            const sigmoidFnDerivative = sigmoidFn * (1 - sigmoidFn);
+            if (derivative) return sigmoidFnDerivative;
+            if (!derivative) return sigmoidFn;
+        },
+        TANH: (value, derivative = false) => {
+            const tanhFn = (Math.exp(value) - (1 / Math.exp(value))) / (Math.exp(value) + (1 / Math.exp(value)));
+            const tanhFnDerivative = tanhFn - Math.pow(tanhFn, 2);
+            if (derivative) return tanhFnDerivative;
+            if (!derivative) return tanhFn;
+        },
+        LOGISTIC: (value, derivative = false) => {
+            const logisticFn = 1 / (1 + Math.exp(-value));
+            const logisticFnDerivative = logisticFn * (1 - logisticFn);
+            if (derivative) return logisticFnDerivative;
+            if (!derivative) return logisticFn;
+        }
     },
     costFn: {
         CROSS_ENTROPY: (expected, output) => {

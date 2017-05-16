@@ -7,23 +7,23 @@ const Network = require('../src/network');
 describe('Network', () => {
     it.only('should create a complete network', () => {
         const network = new Network({
-            activationFunction: utils.activationFunction.SIGMOID,
+            activationFunction: utils.activationFunction.LOGISTIC,
             name: 'Network:test',
             layers: {
                 config: {
                     input: 2,
-                    hidden: [3],
+                    hidden: [5],
                     output: 1
                 }
             }
         });
 
         const trainingOptions = {
-            costFunction: utils.costFn.CROSS_ENTROPY,
-            learningRate: 0.3,
-            error: 0.005,
-            epoch: 50000,
-            logging: 1000
+            costFunction: utils.costFn.MSE,
+            learningRate: 0.1,
+            error: 0.05,
+            epoch: 1000000,
+            logging: 100
         };
 
         network.train(trainingOptions, [{
@@ -45,10 +45,9 @@ describe('Network', () => {
         console.log(network.activate([1, 0]));
         console.log(network.activate([1, 1]));
 
-        const json = JSON.stringify(network.toJSON(), null, 4);
+        /*const json = JSON.stringify(network.toJSON(), null, 4);
         const stream = fs.createWriteStream(`./results/newtork-${new Date().toISOString().slice(0, 19)}_${network.id}.json`);
         stream.write(json);
-        stream.end();
-   
+        stream.end();*/
     });
 });

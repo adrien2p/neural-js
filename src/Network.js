@@ -147,7 +147,6 @@ export default class Network {
             const outputResult = this.activate(input);
             this.propagate(options.learningRate, expected);
 
-            //console.log('result', expected, outputResult);
             errorSum += options.costFunction(expected, outputResult);
         }
 

@@ -8,7 +8,7 @@ import utils from './utils';
 export default class Neuron {
     /**
      * @param {object} options Options configuration
-     * @param {string} [options.activationFunction = 'SIGMOID'] Activation function use to squash the neuron state to the activation value and compute the derivative
+     * @param {function} [options.activationFunction] Activation function use to squash the neuron state to the activation value and compute the derivative
      * @constructor
      */
     constructor(options = {
@@ -74,8 +74,8 @@ export default class Neuron {
         }
         this.state += this.bias;
 
-        this.activation = this.squash(this.state);
-        this.derivative = this.squash(this.state, true);
+        this.activation = this.activationFunction(this.state);
+        this.derivative = this.activationFunction(this.state, true);
 
         return this.activation;
     }
@@ -88,58 +88,30 @@ export default class Neuron {
      */
     propagate(learningRate, target) {
         let error = 0;
+        let isOutput = typeof target !== 'undefined';
 
-        if (typeof target !== 'undefined') {
+        if (isOutput) {
             this.error.responsibility = this.error.projected = target - this.activation;
         } else {
             for (const connection of Object.keys(this.connections.projected)) {
                 const projectedConnection = this.connections.projected[connection];
                 const neuron = projectedConnection.to;
 
-                error += neuron.error.responsibility * projectedConnection.oldWeight;
+                error += neuron.error.responsibility * projectedConnection.weight;
             }
 
-            this.error.responsibility = this.error.projected = error;
+            this.error.responsibility = this.error.projected = this.derivative * error;
         }
 
+        // adjust all the neuron's incoming connections
         for (const connection of Object.keys(this.connections.incoming)) {
             const incomingConnection = this.connections.incoming[connection];
 
-            /*let gradient = this.error.projected;
-            for (const neighbor of Object.keys(this.neighbors)) {
-                gradient += this.neighbors[neighbor].error.responsibility;
-            }*/
-
-            incomingConnection.oldWeight = incomingConnection.weight;
-            incomingConnection.weight += learningRate * this.error.responsibility * this.derivative * incomingConnection.from.activation;
+            let gradient = this.error.projected;
+            incomingConnection.weight += learningRate * gradient * incomingConnection.from.derivative;
         }
 
         this.bias += learningRate * this.error.responsibility;
-    }
-
-    /**
-     * Squash the value parameter with one of the implemented function.
-     * @param {number} value The number to squash
-     * @param {boolean} derivative The derivative is expected or not
-     * @returns {number}
-     */
-    squash(value, derivative = false) {
-        switch (this.activationFunction) {
-            case 'SIGMOID':
-                const sigmoidFn = 1 / (1 + Math.pow(Math.E, -value));
-                const sigmoidFnDerivative = sigmoidFn * (1 - sigmoidFn);
-                if (derivative) return sigmoidFnDerivative;
-                if (!derivative) return sigmoidFn;
-                break;
-            case 'TANH':
-                const tanhFn = (2 / (1 + Math.pow(Math.E, -2 * value))) - 1;
-                const tanhFnDerivative = tanhFn - Math.pow(tanhFn, 2);
-                if (derivative) return tanhFnDerivative;
-                if (!derivative) return tanhFn;
-                break;
-            default:
-                throw new Error(`The activation function ${this.activationFunction} doesn't implemented yet.`);
-        }
     }
 
     /**
